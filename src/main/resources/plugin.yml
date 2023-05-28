@@ -1,0 +1,6 @@
+  name: SignShopCustomSell
+  main: net.mcmerdith.signshopcustomsell.SignShopCustomSell
+  api-version: "1.13"
+  version: "${project.version}"
+  depend: [SignShop]
+  authors: [mcmerdith]

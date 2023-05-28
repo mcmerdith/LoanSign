@@ -1,0 +1,16 @@
+signs:
+#  Loan a player money
+  Loan: loanPlayerMoney
+
+messages:
+  setup:
+    SellAny: You have put a loan of !price for any one of !items!
+  confirm:
+    SellAny: Sell one of !items for !price?
+  transaction:
+    SellAny: You have sold !items for !price!
+  transaction_owner:
+    SellAny: \!customer sold you !items for !price!
+  help:
+    SellAny: The SellAny sign exchanges any one of the customer's items for the owner's money. The 2nd and 3rd lines of this sign can say whatever you like, the price goes on the 4th.  Punch the chest(s) using !linkmaterial containing the type and amount of items you want for a single transaction.
+errors:
