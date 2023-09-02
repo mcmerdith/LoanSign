@@ -3,8 +3,9 @@ package net.mcmerdith.loansign.storage;
 import net.mcmerdith.loansign.LoanSignLogger;
 import net.mcmerdith.loansign.model.Loan;
 
+import java.time.Duration;
 import java.time.Instant;
-import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,12 +18,14 @@ public abstract class DataSource {
 
     /**
      * Load the Data Source
+     *
      * @return If loading was successful
      */
     public abstract boolean load();
 
     /**
      * Save the Data Source (if necessary)
+     *
      * @return If the saving was successful
      */
     public abstract boolean save();
@@ -47,17 +50,17 @@ public abstract class DataSource {
      * @return An immutable list of loans
      */
     public List<Loan> getLoansFrom(UUID giver) {
-        return loans.stream().filter(loan -> loan.giver == giver).toList();
+        return loans.stream().filter(loan -> loan.lender == giver).toList();
     }
 
     /**
      * Get all loans given to a specified player
      *
-     * @param receiver The player
+     * @param borrower The player
      * @return An immutable list of loans
      */
-    public List<Loan> getLoansFor(UUID receiver) {
-        return loans.stream().filter(loan -> loan.receiver == receiver).toList();
+    public List<Loan> getLoansFor(UUID borrower) {
+        return loans.stream().filter(loan -> loan.borrower == borrower).toList();
     }
 
     /**
@@ -66,6 +69,6 @@ public abstract class DataSource {
      * @return An immutable list of loans
      */
     public List<Loan> getExpiredLoans() {
-        return loans.stream().filter(loan -> Instant.now().isAfter(loan.expiry)).toList();
+        return loans.stream().filter(loan -> Instant.now().isAfter(loan.getDueDate())).toList();
     }
 }
