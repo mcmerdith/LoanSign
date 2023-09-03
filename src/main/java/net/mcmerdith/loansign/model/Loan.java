@@ -1,5 +1,6 @@
 package net.mcmerdith.loansign.model;
 
+import net.mcmerdith.loansign.LoanSignMain;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,6 +12,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Loan {
@@ -62,6 +64,10 @@ public class Loan {
 
     /**
      * The list of fees on this loan
+     * <p>Additional fees may be stored separate from this list. Use {@link Loan#getFees()}
+     * to get a list of all fees</p>
+     *
+     * @see Loan#getFees()
      */
     public List<Fee> fees;
 
@@ -187,7 +193,13 @@ public class Loan {
     @NotNull
     @Contract("-> !null")
     public BigDecimal getFeeTotal() {
-        return this.fees.stream().map(f -> f.amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return getFees().stream().map(f -> f.amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public List<Fee> getFees() {
+        List<Fee> allFees = new ArrayList<>(fees);
+        allFees.addAll(payments.stream().map(p -> p.fee).filter(Objects::nonNull).toList());
+        return allFees;
     }
 
     /**
@@ -205,9 +217,12 @@ public class Loan {
 
     /**
      * Make a payment on this loan
+     * <p>This method does not apply fees for insufficient payments.
+     * Use {@link Loan#attemptPayment(double, double)} to auto-apply fees</p>
      *
      * @param maximum The largest payment that could be made
      * @return The payment data, or null if no payment was made
+     * @see Loan#attemptPayment(double, double)
      */
     @Nullable
     @Contract("_ -> _")
@@ -215,16 +230,40 @@ public class Loan {
         // the amount that still needs to be paid
         BigDecimal requiredAmount = getInstallmentAmount();
         // no payment required is there is no balance
-        if (requiredAmount.compareTo(BigDecimal.ZERO) <= 0) return null;
+        if (requiredAmount.compareTo(BigDecimal.ZERO) <= 0 || maximum < 0) return null;
         // calculate the withdrawal
         BigDecimal actualAmount = requiredAmount.min(BigDecimal.valueOf(maximum));
-        // only positive amounts can be made as payments
-        if (actualAmount.compareTo(BigDecimal.ZERO) > 0) {
-            Payment payment = new Payment(actualAmount, requiredAmount.subtract(actualAmount));
-            this.payments.add(payment);
-            return payment;
-        } else {
-            return null;
+        // create and return the payment
+        Payment payment = new Payment(actualAmount, requiredAmount.subtract(actualAmount));
+        this.payments.add(payment);
+        return payment;
+    }
+
+    /**
+     * Make a payment on this loan
+     *
+     * @param maximum The largest payment that could be made
+     * @return The payment data, or null if no payment was made
+     */
+    @Nullable
+    @Contract("_, _ -> _")
+    public Payment attemptPayment(double maximum, double maxFee) {
+        Payment payment = makePayment(maximum);
+        if (payment == null) return null;
+        if (payment.deficit.compareTo(BigDecimal.ZERO) > 0) {
+            payment.setFee(new Fee(
+                    payment.deficit
+                            .divide(payment.getTotal(), RoundingMode.DOWN)
+                            .multiply(BigDecimal.valueOf(maxFee)),
+                    "Insufficient Payment",
+                    String.format(
+                            "%s / %s (%s short)",
+                            LoanSignMain.economy.format(payment.getAmount()),
+                            LoanSignMain.economy.format(payment.getTotal_d()),
+                            LoanSignMain.economy.format(payment.getDeficit())
+                    )));
         }
+        return payment;
     }
 }
+

@@ -1,6 +1,7 @@
 package net.mcmerdith.loansign;
 
 import net.mcmerdith.loansign.operations.loanPlayerMoney;
+import net.milkbowl.vault.economy.Economy;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -18,6 +19,8 @@ import static net.mcmerdith.loansign.LoanSignLogger.MAIN;
 
 public class LoanSignMain extends JavaPlugin {
     public static LoanSignMain instance;
+
+    public static Economy economy;
 
     private static final int B_STATS_ID = 18595;
 

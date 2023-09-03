@@ -23,6 +23,10 @@
             <id>paper-repo</id>
             <url>https://papermc.io/repo/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
@@ -48,6 +52,12 @@
             <groupId>org.makershaven</groupId>
             <artifactId>SignShop</artifactId>
             <version>3.6.4.3-dev</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

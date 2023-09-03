@@ -2,6 +2,7 @@ package net.mcmerdith.loansign.model;
 
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -23,6 +24,9 @@ public class Payment {
      */
     @NotNull
     public BigDecimal deficit;
+
+    @Nullable
+    public Fee fee;
 
     /**
      * Create a new payment
@@ -57,6 +61,10 @@ public class Payment {
         this(BigDecimal.valueOf(amount), BigDecimal.valueOf(deficit));
     }
 
+    public void setFee(@Nullable Fee fee) {
+        this.fee = fee;
+    }
+
     /**
      * Also see {@link Payment#amount}
      *
@@ -73,5 +81,13 @@ public class Payment {
      */
     public double getDeficit() {
         return this.deficit.doubleValue();
+    }
+
+    public BigDecimal getTotal() {
+        return amount.add(deficit);
+    }
+
+    public double getTotal_d() {
+        return getAmount() + getDeficit();
     }
 }
