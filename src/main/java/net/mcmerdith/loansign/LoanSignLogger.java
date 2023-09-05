@@ -11,6 +11,8 @@ public class LoanSignLogger {
     private static Map<String, LoanSignLogger> LOGGERS = new HashMap<>();
 
     public static LoanSignLogger MAIN = instance(null);
+    public static LoanSignLogger DATASOURCE = instance("DataSource");
+    public static LoanSignLogger LOANSHARK = instance("LoanShark");
 
     public static LoanSignLogger instance(String name) {
         if (!LOGGERS.containsKey(name)) LOGGERS.put(name, new LoanSignLogger(name));

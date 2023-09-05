@@ -35,32 +35,32 @@ public class Loan {
     /**
      * The initial amount of the loan
      */
-    public BigDecimal loanAmount;
+    protected BigDecimal loanAmount;
 
     /**
      * The initiation date of the loan
      */
-    public Instant initiation;
+    protected Instant initiation;
 
     /**
      * The current period the loan is on
      */
-    public int currentPeriod;
+    protected int currentPeriod;
 
     /**
      * The number of periods the loan lasts
      */
-    public int totalPeriods;
+    protected int totalPeriods;
 
     /**
      * The time unit represented by each period
      */
-    public ChronoUnit periodUnit;
+    protected ChronoUnit periodUnit;
 
     /**
      * The list of payments made on this loan
      */
-    public List<Payment> payments;
+    protected List<Payment> payments;
 
     /**
      * The list of fees on this loan
@@ -69,12 +69,12 @@ public class Loan {
      *
      * @see Loan#getFees()
      */
-    public List<Fee> fees;
+    protected List<Fee> fees;
 
     /**
      * Gson Constructor: Do not use
      */
-    public Loan() {
+    protected Loan() {
     }
 
     /**
@@ -154,10 +154,49 @@ public class Loan {
     }
 
     /**
-     * @return The number of payments before the due date
+     * @return The period that this loan should be on based on the current date
+     * @apiNote May be greater than {@link Loan#totalPeriods}
      */
-    public long getRemainingPayments() {
-        return this.totalPeriods - this.currentPeriod;
+    public int getExpectedCurrentPeriod() {
+        return (int) this.initiation.until(Instant.now(), this.periodUnit);
+    }
+
+    /**
+     * @return The number of payments before the due date
+     * @apiNote This value is never negative (0 < n <= {@link Loan#totalPeriods})
+     */
+    public int getRemainingPeriods() {
+        return Math.max(this.totalPeriods - this.currentPeriod, 0);
+    }
+
+    /**
+     * @return If a payment is due on this loan
+     */
+    public boolean isPaymentDue() {
+        return this.currentPeriod < getExpectedCurrentPeriod();
+    }
+
+    /**
+     * @return If there is no remaining balance on this loan
+     */
+    public boolean isPaidOff() {
+        return this.getRemainingAmount().compareTo(BigDecimal.ZERO) <= 0;
+    }
+
+    /**
+     * @return The number of payments required to make this loan current
+     * @apiNote This value is designed to be used as a multiplier for {@link Loan#getInstallmentAmount()}
+     */
+    public int getRequiredPayments() {
+        // No balance, no payment
+        if (this.isPaidOff()) return 0;
+        // required payments to be current
+        int requiredPayments = getExpectedCurrentPeriod() - currentPeriod;
+        // if current or ahead no payments required
+        if (requiredPayments <= 0) return 0;
+        // return the number of payments required
+        // max: remaining payments, min: 1
+        return Math.max(1, Math.min(requiredPayments, getRemainingPeriods()));
     }
 
     /**
@@ -171,11 +210,12 @@ public class Loan {
 
     /**
      * @return The amount remaining to be paid
+     * @apiNote This value is never negative
      */
     @NotNull
     @Contract("-> !null")
     public BigDecimal getRemainingAmount() {
-        return getTotalAmount().subtract(getPaymentTotal());
+        return getTotalAmount().subtract(getPaymentTotal()).max(BigDecimal.ZERO);
     }
 
     /**
@@ -196,6 +236,9 @@ public class Loan {
         return getFees().stream().map(f -> f.amount).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * @return All fees on this loan and associated payments
+     */
     public List<Fee> getFees() {
         List<Fee> allFees = new ArrayList<>(fees);
         allFees.addAll(payments.stream().map(p -> p.fee).filter(Objects::nonNull).toList());
@@ -204,14 +247,20 @@ public class Loan {
 
     /**
      * @return The current amount per installment to pay the loan off before the due date
+     * @apiNote This value is never negative
      */
     @NotNull
     @Contract("-> !null")
     public BigDecimal getInstallmentAmount() {
-        if (getRemainingPayments() <= 0) {
-            return getRemainingAmount();
+        if (this.isPaidOff()) return BigDecimal.ZERO;
+
+        BigDecimal remainingAmount = getRemainingAmount();
+        int remainingPayments = getRemainingPeriods();
+
+        if (remainingPayments <= 1) {
+            return remainingAmount;
         } else {
-            return getRemainingAmount().divide(BigDecimal.valueOf(getRemainingPayments()), RoundingMode.DOWN);
+            return remainingAmount.divide(BigDecimal.valueOf(remainingPayments), RoundingMode.DOWN);
         }
     }
 
@@ -227,8 +276,14 @@ public class Loan {
     @Nullable
     @Contract("_ -> _")
     public Payment makePayment(double maximum) {
+        // No balance, no payment
+        if (this.isPaidOff()) return null;
         // the amount that still needs to be paid
-        BigDecimal requiredAmount = getInstallmentAmount();
+        BigDecimal installmentAmount = getInstallmentAmount();
+        // get the number of payments that must be made to become current
+        int requiredPayments = getRequiredPayments();
+        // calculate the required amount
+        BigDecimal requiredAmount = installmentAmount.multiply(BigDecimal.valueOf(requiredPayments));
         // no payment required is there is no balance
         if (requiredAmount.compareTo(BigDecimal.ZERO) <= 0 || maximum < 0) return null;
         // calculate the withdrawal
@@ -236,6 +291,7 @@ public class Loan {
         // create and return the payment
         Payment payment = new Payment(actualAmount, requiredAmount.subtract(actualAmount));
         this.payments.add(payment);
+        this.currentPeriod = Math.min(this.currentPeriod + requiredPayments, this.totalPeriods);
         return payment;
     }
 

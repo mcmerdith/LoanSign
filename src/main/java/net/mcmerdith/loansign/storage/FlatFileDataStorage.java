@@ -3,6 +3,7 @@ package net.mcmerdith.loansign.storage;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
+import net.mcmerdith.loansign.LoanSignLogger;
 import net.mcmerdith.loansign.LoanSignMain;
 import net.mcmerdith.loansign.model.Loan;
 
@@ -11,11 +12,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.time.Period;
 import java.util.List;
-import java.util.UUID;
 
-public class FlatFileDataSource extends DataSource {
+public class FlatFileDataStorage implements DataStorage {
+    private static final LoanSignLogger logger = LoanSignLogger.DATASOURCE;
+
     private final Gson gson = new Gson();
 
     private File getLoanFile() {
@@ -23,10 +24,10 @@ public class FlatFileDataSource extends DataSource {
     }
 
     @Override
-    public boolean save() {
-        String data = gson.toJson(loans);
+    public boolean save(LoanData data) {
+        String dataString = gson.toJson(data.getAllLoans());
         try {
-            Files.writeString(getLoanFile().toPath(), data,
+            Files.writeString(getLoanFile().toPath(), dataString,
                     StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE,
                     StandardOpenOption.TRUNCATE_EXISTING,
@@ -40,10 +41,10 @@ public class FlatFileDataSource extends DataSource {
     }
 
     @Override
-    public boolean load() {
+    public boolean load(LoanData data) {
         try {
-            loans = gson.fromJson(Files.readString(getLoanFile().toPath(), StandardCharsets.UTF_8), new TypeToken<>() {
-            });
+            data.setLoans(gson.fromJson(Files.readString(getLoanFile().toPath(), StandardCharsets.UTF_8), new TypeToken<List<Loan>>() {
+            }));
             return true;
         } catch (IOException e) {
             logger.exception(e, "Failed to write data");

@@ -1,6 +1,8 @@
 package net.mcmerdith.loansign;
 
 import net.mcmerdith.loansign.operations.loanPlayerMoney;
+import net.mcmerdith.loansign.storage.FlatFileDataStorage;
+import net.mcmerdith.loansign.storage.LoanData;
 import net.milkbowl.vault.economy.Economy;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
@@ -11,7 +13,6 @@ import org.wargamer2010.signshop.configuration.configUtil;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -51,12 +52,21 @@ public class LoanSignMain extends JavaPlugin {
         }
 
         if (SignShopConfig.metricsEnabled()) {
-            Metrics metrics = new Metrics(this, B_STATS_ID);
+//            Metrics metrics =
+            new Metrics(this, B_STATS_ID);
             MAIN.info("Thank you for enabling metrics!");
         }
 
-        MAIN.info("Enabled");
+        LoanData.instance().enable(new FlatFileDataStorage());
 
+        MAIN.info("Enabled");
+    }
+
+    @Override
+    public void onDisable() {
+        super.onDisable();
+
+        LoanData.instance().disable();
     }
 
     /***

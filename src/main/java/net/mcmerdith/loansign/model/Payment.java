@@ -26,7 +26,7 @@ public class Payment {
     public BigDecimal deficit;
 
     @Nullable
-    public Fee fee;
+    public Fee fee = null;
 
     /**
      * Create a new payment
