@@ -34,8 +34,8 @@ public class Fee {
     /**
      * Create a new fee
      *
-     * @param date        The date of the fee
-     * @param amount      The amount of the fee
+     * @param date   The date of the fee
+     * @param amount The amount of the fee
      * @param reason A description of the fee
      */
     public Fee(@NotNull Instant date, @NotNull BigDecimal amount, @Nullable String reason, @Nullable String explanation) {
@@ -48,7 +48,7 @@ public class Fee {
     /**
      * Create a new fee with a date of {@link Instant#now()}
      *
-     * @param amount      The amount of the fee
+     * @param amount The amount of the fee
      * @param reason A description of the fee
      */
     public Fee(@NotNull BigDecimal amount, @Nullable String reason, @Nullable String explanation) {
@@ -58,7 +58,7 @@ public class Fee {
     /**
      * Create a new fee with a date of {@link Instant#now()}
      *
-     * @param amount      The amount of the fee
+     * @param amount The amount of the fee
      * @param reason A description of the fee
      */
     public Fee(double amount, @Nullable String reason, @Nullable String explanation) {

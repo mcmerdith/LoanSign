@@ -1,12 +1,7 @@
 package net.mcmerdith.loansign.operations;
 
-import org.bukkit.inventory.ItemStack;
-import org.wargamer2010.signshop.configuration.SignShopConfig;
 import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopOperation;
-import org.wargamer2010.signshop.util.itemUtil;
-
-import java.util.List;
 
 public class loanPlayerMoney implements SignShopOperation {
 
