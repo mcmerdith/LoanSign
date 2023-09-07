@@ -3,9 +3,9 @@ package net.mcmerdith.loansign.storage;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import net.mcmerdith.loansign.LoanSignLogger;
 import net.mcmerdith.loansign.LoanSignMain;
 import net.mcmerdith.loansign.model.Loan;
+import net.mcmerdith.mcmpluginlib.McmPluginLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,8 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
-public class FlatFileDataStorage implements DataStorage {
-    private static final LoanSignLogger logger = LoanSignLogger.DATASOURCE;
+public class FlatFileDataStore implements DataStore {
+    private static final McmPluginLogger logger = McmPluginLogger.classInstance(FlatFileDataStore.class);
 
     private final Gson gson = new Gson();
 

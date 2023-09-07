@@ -1,6 +1,6 @@
 package net.mcmerdith.loansign.storage;
 
-public interface DataStorage {
+public interface DataStore {
 
     /**
      * Load the Data

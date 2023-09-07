@@ -1,20 +1,23 @@
 package net.mcmerdith.loansign.storage;
 
-import net.mcmerdith.loansign.LoanSignLogger;
 import net.mcmerdith.loansign.LoanSignMain;
 import net.mcmerdith.loansign.model.Loan;
+import net.mcmerdith.loansign.model.LoanOffer;
 import net.mcmerdith.loansign.runnable.LoanShark;
+import net.mcmerdith.mcmpluginlib.McmPluginLogger;
 import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class LoanData {
+    private static final McmPluginLogger logger = McmPluginLogger.classInstance(LoanData.class);
 
     private static LoanData instance;
 
@@ -23,7 +26,7 @@ public class LoanData {
         return instance;
     }
 
-    private DataStorage dataStorage;
+    private DataStore dataStore;
 
     /**
      * The watchdog for loans
@@ -34,19 +37,20 @@ public class LoanData {
      * Thread-safe storage
      */
     private final ConcurrentLinkedQueue<Loan> loans = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<LoanOffer> loanOffers = new ConcurrentLinkedQueue<>();
 
-    public void enable(DataStorage dataStorage) {
+    public void enable(DataStore dataStore) {
         // set storage handler
-        this.dataStorage = dataStorage;
+        this.dataStore = dataStore;
         // load data from handler
-        this.dataStorage.load(this);
+        this.dataStore.load(this);
         // start the watchdog
         this.loanShark = new LoanShark();
         // start an auto-save task (5 minute interval)
         Bukkit.getScheduler().runTaskTimerAsynchronously(LoanSignMain.instance, () -> {
-            LoanSignLogger.DATASOURCE.info("Auto-saving data...");
-            this.dataStorage.save(this);
-            LoanSignLogger.DATASOURCE.info("Done!");
+            logger.info("Auto-saving data...");
+            this.dataStore.save(this);
+            logger.info("Done!");
         }, 6000L, 6000L);
     }
 
@@ -59,13 +63,14 @@ public class LoanData {
                 // The watchdog has to complete before the data can be saved
                 //noinspection BusyWait
                 Thread.sleep(100);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         }
 
         // Save the data
-        LoanSignLogger.DATASOURCE.info("Saving data before shutdown...");
-        this.dataStorage.save(this);
-        LoanSignLogger.DATASOURCE.info("Done!");
+        logger.info("Saving data before shutdown...");
+        this.dataStore.save(this);
+        logger.info("Done!");
     }
 
     /**
@@ -92,16 +97,16 @@ public class LoanData {
      *
      * @return An immutable collection of loans
      */
-    public Collection<Loan> getAllLoans() {
+    public List<Loan> getAllLoans() {
         return loans.stream().toList();
     }
 
     /**
      * Get all loans that have a payment due
      *
-     * @return
+     * @return An immutable list of loans
      */
-    public Collection<Loan> getDueLoans() {
+    public List<Loan> getDueLoans() {
         return loans.stream().filter(Loan::isPaymentDue).toList();
     }
 
@@ -111,7 +116,7 @@ public class LoanData {
      * @param giver The player
      * @return An immutable list of loans
      */
-    public Collection<Loan> getLoansFrom(UUID giver) {
+    public List<Loan> getLoansFrom(UUID giver) {
         return loans.stream().filter(loan -> loan.lender == giver).toList();
     }
 
@@ -121,7 +126,7 @@ public class LoanData {
      * @param borrower The player
      * @return An immutable list of loans
      */
-    public Collection<Loan> getLoansFor(UUID borrower) {
+    public List<Loan> getLoansFor(UUID borrower) {
         return loans.stream().filter(loan -> loan.borrower == borrower).toList();
     }
 
@@ -130,7 +135,30 @@ public class LoanData {
      *
      * @return An immutable list of loans
      */
-    public Collection<Loan> getExpiredLoans() {
+    public List<Loan> getExpiredLoans() {
         return loans.stream().filter(loan -> Instant.now().isAfter(loan.getDueDate())).toList();
+    }
+
+    /**
+     * Set a loan offer
+     * <p>Only one offer can exist per borrower</p>
+     * <p>{@link LoanOffer#loan} -> {@link Loan#borrower}</p>
+     *
+     * @param offer The new offer
+     */
+    public void setLoanOffer(@NotNull LoanOffer offer) {
+        loanOffers.removeIf(o -> o.loan.borrower == offer.loan.borrower);
+        loanOffers.add(offer);
+    }
+
+    /**
+     * Get a players loan offer
+     *
+     * @param player The players UUID
+     * @return The {@link LoanOffer}, or null if no offer exists
+     */
+    @Nullable
+    public LoanOffer getLoanOffer(UUID player) {
+        return loanOffers.stream().filter(o -> o.loan.borrower.equals(player)).findFirst().orElse(null);
     }
 }

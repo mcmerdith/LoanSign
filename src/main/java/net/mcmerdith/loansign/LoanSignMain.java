@@ -1,24 +1,25 @@
 package net.mcmerdith.loansign;
 
+import net.mcmerdith.loansign.command.LoanCommand;
 import net.mcmerdith.loansign.operations.loanPlayerMoney;
-import net.mcmerdith.loansign.storage.FlatFileDataStorage;
+import net.mcmerdith.loansign.storage.FlatFileDataStore;
 import net.mcmerdith.loansign.storage.LoanData;
+import net.mcmerdith.mcmpluginlib.McmPluginLogger;
 import net.milkbowl.vault.economy.Economy;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
 import org.wargamer2010.signshop.configuration.configUtil;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
-import static net.mcmerdith.loansign.LoanSignLogger.MAIN;
-
 public class LoanSignMain extends JavaPlugin {
+    private static final McmPluginLogger logger = McmPluginLogger.classInstance(LoanSignMain.class);
+
     public static LoanSignMain instance;
 
     public static Economy economy;
@@ -32,7 +33,7 @@ public class LoanSignMain extends JavaPlugin {
         // Check if signshop is loaded
         PluginManager pm = Bukkit.getServer().getPluginManager();
         if (!pm.isPluginEnabled("SignShop")) {
-            MAIN.error("SignShop is not loaded, can not continue.");
+            logger.error("SignShop is not loaded, can not continue.");
             pm.disablePlugin(this);
             return;
         }
@@ -54,12 +55,14 @@ public class LoanSignMain extends JavaPlugin {
         if (SignShopConfig.metricsEnabled()) {
 //            Metrics metrics =
             new Metrics(this, B_STATS_ID);
-            MAIN.info("Thank you for enabling metrics!");
+            logger.info("Thank you for enabling metrics!");
         }
 
-        LoanData.instance().enable(new FlatFileDataStorage());
+        LoanData.instance().enable(new FlatFileDataStore());
 
-        MAIN.info("Enabled");
+        new LoanCommand().setExecutorFor(getCommand("loan"));
+        getLogger();
+        logger.info("Enabled");
     }
 
     @Override
@@ -75,7 +78,7 @@ public class LoanSignMain extends JavaPlugin {
     private void createDir() {
         if (!this.getDataFolder().exists()) {
             if (!this.getDataFolder().mkdir()) {
-                MAIN.error("Could not create plugin folder!");
+                logger.error("Could not create plugin folder!");
             }
         }
     }
